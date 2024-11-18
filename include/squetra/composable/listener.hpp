@@ -18,7 +18,7 @@ class Listener {
     virtual void onItemsComponentModified(std::span<const IndexT> itemIndices,
                                           IndexT componentIndex) = 0;
     virtual void
-    onComponentsModified(std::span<const IndexT> componentIndices) = 0;
+    onContainerComponentsModified(std::span<const IndexT> componentIndices) = 0;
 };
 } // namespace squetra
 
