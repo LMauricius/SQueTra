@@ -9,12 +9,15 @@ namespace squetra {
 
 /**
  * Remove elements from a vector
+ * @tparam T The type of the elements
+ * @tparam Compare The comparison functor
  * @param sortedVec The sorted ascending vector to remove from
  * @param sortedItemsToRemove The sorted ascending items to remove
+ * @param comp The comparison function
  */
-template <class T>
+template <class T, class Compare>
 void remove_from_sorted(std::vector<T> &sortedVec,
-                        std::span<const T> sortedItemsToRemove) {
+                        std::span<const T> sortedItemsToRemove, Compare comp) {
     auto beginTestRange = sortedVec.begin();
     decltype(beginTestRange) beginPlaceRange;
     auto endRange = sortedVec.end();
@@ -26,7 +29,7 @@ void remove_from_sorted(std::vector<T> &sortedVec,
         const auto &toRemove = *toRemoveIt;
 
         // get the first element >= toRemove
-        auto lb = std::lower_bound(beginTestRange, endRange, toRemove);
+        auto lb = std::lower_bound(beginTestRange, endRange, toRemove, comp);
 
         // early exit
         if (lb == endRange)
@@ -37,7 +40,7 @@ void remove_from_sorted(std::vector<T> &sortedVec,
         // If LB points to the item to remove, skip it for the next test
         // range and setup the placing position before continuing to the item
         // moving loop
-        if (toRemove < *lb) {
+        if (comp(toRemove, *lb)) {
             beginTestRange = lb;
         } else {
             beginPlaceRange = lb;
@@ -63,7 +66,7 @@ void remove_from_sorted(std::vector<T> &sortedVec,
             break;
 
         // move items while increasing the beginTestRange to the lower bound
-        while (beginTestRange < lb) {
+        while (comp(beginTestRange, lb)) {
             (*beginPlaceRange) = (*beginTestRange);
             beginPlaceRange++;
             beginTestRange++;
@@ -71,13 +74,13 @@ void remove_from_sorted(std::vector<T> &sortedVec,
 
         // if LB points to the item to remove, skip it for the next test
         // range
-        if (!(toRemove < *lb)) {
+        if (!comp(toRemove, *lb)) {
             beginTestRange++;
         }
     }
 
     // move final items
-    while (beginTestRange < endRange) {
+    while (comp(beginTestRange, endRange)) {
         (*beginPlaceRange) = (*beginTestRange);
         beginPlaceRange++;
         beginTestRange++;
@@ -85,6 +88,12 @@ void remove_from_sorted(std::vector<T> &sortedVec,
 
     // truncate the copied items
     sortedVec.resize(beginPlaceRange - sortedVec.begin());
+}
+
+template <class T>
+void remove_from_sorted(std::vector<T> &sortedVec,
+                        std::span<const T> sortedItemsToRemove) {
+    remove_from_sorted(sortedVec, sortedItemsToRemove, std::less<T>());
 }
 
 /**
