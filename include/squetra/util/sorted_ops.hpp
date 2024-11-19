@@ -87,6 +87,56 @@ void remove_from_sorted(std::vector<T> &sortedVec,
     sortedVec.resize(beginPlaceRange - sortedVec.begin());
 }
 
+/**
+ * Adds items from one sorted container into another one, preserving the order
+ * of both containers
+ * @tparam T The type of the items
+ * @tparam Compare The comparison functor type
+ * @param into The sorted container to add to
+ * @param from The sorted container to add
+ * @param comp The comparison function
+ */
+template <class T, class Compare>
+void merge_into(std::vector<T> &into, std::span<const T> from, Compare comp) {
+    // we allocate elements on the end, and iterate from the last existing
+    // element to the begin
+    std::size_t origSize = into.size();
+    into.resize(origSize + from.size());
+    auto outPos = into.rbegin();
+    auto pos1 = into.rend() - origSize;
+    auto pos2 = from.rbegin();
+    auto end1 = into.rend();
+    auto end2 = from.rend();
+
+    for (;;) {
+        while (comp(*pos2, *pos1)) {
+            *outPos = *pos1;
+            ++outPos;
+            ++pos1;
+            if (pos1 == end1) {
+                // we only have the second container to use
+                std::copy(pos2, end2, outPos);
+                return;
+            }
+        }
+
+        while (!comp(*pos2, *pos1)) {
+            *outPos = *pos2;
+            ++outPos;
+            ++pos2;
+            if (pos2 == end2) {
+                // the first container's elements are already in place
+                return;
+            }
+        }
+    }
+}
+
+template <class T>
+void merge_into(std::vector<T> &into, std::span<const T> from) {
+    merge_into(into, from, std::less<T>());
+}
+
 } // namespace squetra
 
 #endif // H_INCLUDED_SQUETRA_UTIL_SORTED_OPS
