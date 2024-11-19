@@ -50,6 +50,36 @@ class FlushingContainer {
     inline void removeListener4ItemsRemoved(Listener *listener);
     inline void removeListener4ItemsComponentModified(Listener *listener);
     inline void removeListener4ContainerComponentsModified(Listener *listener);
+    inline void removeListener4PointersInvalidated(Listener *listener);
+
+    // Info
+
+    /**
+     * @returns the number of used indices
+     */
+    inline CountT size() const;
+
+    /**
+     * Whether a free index can be popped
+     */
+    inline bool hasFreeIndices() const;
+
+    /**
+     * Returns a maximum index for which tracking data is allocated
+     */
+    inline IndexT getMaxUsedIndex() const;
+
+    /**
+     * @returns whether the index is free
+     */
+    inline bool isIndexFree(IndexT index) const;
+
+    /**
+     * Returns the number of components
+     */
+    inline std::size_t getComponentCount() const;
+
+    // Updating
 
     /**
      * Notifies all listeners of unflushed changes.
@@ -65,24 +95,9 @@ class FlushingContainer {
     inline void notifyComponentsAdded(std::size_t additionalComponentCount);
 
     /**
-     * Whether a free index can be popped
-     */
-    inline bool hasFreeIndices() const;
-
-    /**
      * Returns an unused index that was previously freed
      */
     inline IndexT popFreeIndex();
-
-    /**
-     * Returns a maximum index for which tracking data is allocated
-     */
-    inline IndexT getMaxUsedIndex() const;
-
-    /**
-     * Returns the number of components
-     */
-    inline std::size_t getComponentCount() const;
 
   private:
     /**
@@ -287,6 +302,8 @@ inline void FlushingContainer::notifyItemAdded(IndexT itemIndex) {
 }
 
 inline void FlushingContainer::notifyItemRemoved(IndexT itemIndex) {
+    --m_usedIndexCount;
+
     // change state
     m_itemRemovedIndices.push_back(itemIndex);
 
@@ -350,9 +367,13 @@ FlushingContainer::notifyContainerComponentModified(IndexT componentIndex) {
 
 // === Info ===
 
+inline CountT FlushingContainer::size() const { return m_usedIndexCount; }
+
 inline bool FlushingContainer::hasFreeIndices() const {
     return !m_freeItemIndices.empty();
 }
+
+inline IndexT FlushingContainer::getMaxUsedIndex() const { return m_maxIndex; }
 
 inline IndexT FlushingContainer::popFreeIndex() {
     IndexT ret = m_freeItemIndices.back();
