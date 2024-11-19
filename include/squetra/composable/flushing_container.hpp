@@ -122,8 +122,10 @@ class FlushingContainer {
     // State tracking
 
     CountT m_maxIndex;
+    CountT m_usedIndexCount;
 
     bool m_isDirty;
+    std::vector<bool> m_isIndexFree;
     std::vector<bool> m_isContainerComponentDirty;
     std::vector<std::vector<bool>> m_areComponentItemsDirty;
 
@@ -277,12 +279,16 @@ inline void FlushingContainer::flush() {
 inline void FlushingContainer::notifyItemAdded(IndexT itemIndex) {
 
     // adding new entry
+    ++m_usedIndexCount;
+
     if (m_maxIndex >= itemIndex) {
         m_freeItemIndices.reserve(m_freeItemIndices.size() +
                                   (itemIndex - m_maxIndex));
         for (IndexT i = m_maxIndex; i < itemIndex; i++) {
             m_freeItemIndices.push_back(i);
         }
+
+        m_isIndexFree.resize(itemIndex + 1, true);
 
         for (auto &isComponentItemDirty : m_areComponentItemsDirty) {
             isComponentItemDirty.resize(itemIndex + 1, false);
@@ -291,6 +297,7 @@ inline void FlushingContainer::notifyItemAdded(IndexT itemIndex) {
 
     // change state
     m_itemAddedIndices.push_back(itemIndex);
+    m_isIndexFree[itemIndex] = false;
 
     // notify all components
     for (IndexT componentIndex = 0; componentIndex < getComponentCount();
@@ -306,6 +313,7 @@ inline void FlushingContainer::notifyItemRemoved(IndexT itemIndex) {
 
     // change state
     m_itemRemovedIndices.push_back(itemIndex);
+    m_isIndexFree[itemIndex] = true;
 
     // notify all components
     for (IndexT componentIndex = 0; componentIndex < getComponentCount();
@@ -373,6 +381,8 @@ inline bool FlushingContainer::hasFreeIndices() const {
     return !m_freeItemIndices.empty();
 }
 
+inline bool FlushingContainer::isIndexFree(IndexT index) const { return false; }
+
 inline IndexT FlushingContainer::getMaxUsedIndex() const { return m_maxIndex; }
 
 inline IndexT FlushingContainer::popFreeIndex() {
@@ -380,8 +390,6 @@ inline IndexT FlushingContainer::popFreeIndex() {
     m_freeItemIndices.pop_back();
     return ret;
 }
-
-inline IndexT FlushingContainer::getMaxUsedIndex() const { return m_maxIndex; }
 
 inline std::size_t FlushingContainer::getComponentCount() const {
     return m_isContainerComponentDirty.size();
